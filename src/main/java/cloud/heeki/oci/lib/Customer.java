@@ -1,4 +1,4 @@
-package cloud.heeki.oci;
+package cloud.heeki.oci.lib;
 
 import java.util.UUID;
 

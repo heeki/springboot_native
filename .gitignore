@@ -10,3 +10,8 @@ etc/*
 HELP.md
 mvnw
 notes.md
+
+# project
+.classpath
+.project
+.settings/

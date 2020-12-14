@@ -1,6 +1,7 @@
 package cloud.heeki.oci;
 
-import com.google.gson.Gson;
+import cloud.heeki.oci.lib.Customer;
+// import com.google.gson.Gson;
 import java.util.ArrayList;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,8 @@ public class OciController {
 		// String s = "{\"given_name\":\"Jane\",\"family_name\":\"Doe\",\"birthdate\":\"1970-01-01\",\"email\":\"jane.doe@heeki.cloud\",\"phone_number\":\"+15551234567\",\"phone_number_verified\":true}";
         // Customer c2 = g.fromJson(s, Customer.class);
         // customers.add(c2);
+        // System.out.println(c1);
+        // System.out.println(c2);
     }
 
     @GetMapping("/customer")
