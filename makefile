@@ -4,7 +4,9 @@ run:
 	./mvnw spring-boot:run
 
 compile:
+	# mvn clean
 	mvn compile
 
 package:
-	mvn clean package
+	# mvn clean
+	mvn package
