@@ -1,28 +1,26 @@
 package cloud.heeki.oci;
 
-import cloud.heeki.oci.lib.Customer;
-// import com.google.gson.Gson;
-import java.util.ArrayList;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import cloud.heeki.oci.lib.Customer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.util.ArrayList;
 
 @RestController
 public class OciController {
     private ArrayList<Customer> customers = new ArrayList<Customer>();
+    private Gson g = new GsonBuilder().setPrettyPrinting().create();
 
     OciController() {
         Customer c1 = new Customer("John", "Doe", "1970-01-01", "john.doe@heeki.cloud", "+15551234567", true);
-		customers.add(c1);
-        // Gson g = new Gson();
-		// String s = "{\"given_name\":\"Jane\",\"family_name\":\"Doe\",\"birthdate\":\"1970-01-01\",\"email\":\"jane.doe@heeki.cloud\",\"phone_number\":\"+15551234567\",\"phone_number_verified\":true}";
-        // Customer c2 = g.fromJson(s, Customer.class);
-        // customers.add(c2);
-        // System.out.println(c1);
-        // System.out.println(c2);
+        Customer c2 = new Customer("Jane", "Doe", "1970-01-01", "jane.doe@heeki.cloud", "+15551234567", true);
+        customers.add(c1);
+        customers.add(c2);
     }
 
     @GetMapping("/customer")
