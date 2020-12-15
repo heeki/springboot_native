@@ -1,8 +1,7 @@
 package cloud.heeki.oci.lib;
 
-import java.util.UUID;
-
 import com.google.gson.Gson;
+import java.util.UUID;
 
 public class Customer {
     public UUID uuid;
