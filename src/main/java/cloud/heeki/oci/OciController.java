@@ -23,6 +23,11 @@ public class OciController {
         customers.add(c2);
     }
 
+    @GetMapping("/")
+    String getBase() {
+        return "";
+    }
+
     @GetMapping("/customer")
     String getCustomers() {
         return this.customers.toString();

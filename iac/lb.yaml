@@ -15,18 +15,12 @@ Parameters:
     Type: String
   pCertArn:
     Type: String
+  pNLBIps:
+    Type: List<String>
+  pALBIps:
+    Type: List<String>
 Resources:
   # Security Groups
-  NetSGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for NLB
-      VpcId: !Ref pVpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: !Ref pIngressCidr
   AppSGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -34,13 +28,45 @@ Resources:
       VpcId: !Ref pVpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          SourceSecurityGroupId: !Ref NetSGroup
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref pIngressBastion
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Join ["/", [!Select [0, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Join ["/", [!Select [1, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Join ["/", [!Select [2, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Join ["/", [!Select [3, !Ref pNLBIps], "32"]]
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           SourceSecurityGroupId: !Ref pIngressBastion
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Join ["/", [!Select [0, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Join ["/", [!Select [1, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Join ["/", [!Select [2, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Join ["/", [!Select [3, !Ref pNLBIps], "32"]]
   TaskSGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -56,7 +82,63 @@ Resources:
           ToPort: 8080
           SourceSecurityGroupId: !Ref pIngressBastion
   # NLB
-
+  NetLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      Scheme: internal
+      Subnets: !Ref pSubnetIds
+      Type: network
+  NetListener80:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref NetTargets80
+          Type: forward
+      LoadBalancerArn: !Ref NetLB
+      Port: 80
+      Protocol: TCP
+  NetTargets80:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckProtocol: "TCP"
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Port: 80
+      Protocol: TCP
+      Targets:
+        - Id: !Select [0, !Ref pALBIps]
+        - Id: !Select [1, !Ref pALBIps]
+        - Id: !Select [2, !Ref pALBIps]
+        - Id: !Select [3, !Ref pALBIps]
+      TargetType: ip
+      VpcId: !Ref pVpcId
+  NetListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref NetTargets
+          Type: forward
+      LoadBalancerArn: !Ref NetLB
+      Port: 443
+      Protocol: TCP
+  NetTargets:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckProtocol: "TCP"
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Port: 443
+      Protocol: TCP
+      Targets:
+        - Id: !Select [0, !Ref pALBIps]
+        - Id: !Select [1, !Ref pALBIps]
+        - Id: !Select [2, !Ref pALBIps]
+        - Id: !Select [3, !Ref pALBIps]
+      TargetType: ip
+      VpcId: !Ref pVpcId
   # ALB
   AppLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -67,6 +149,16 @@ Resources:
         - !Ref AppSGroup
       Subnets: !Ref pSubnetIds
       Type: application
+  AppListener80:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref AppTargets
+          Type: forward
+      LoadBalancerArn: !Ref AppLB
+      Port: 80
+      Protocol: HTTP
   AppListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -105,8 +197,6 @@ Resources:
       TTL: 300
       Type: CNAME
 Outputs:
-  outNetSGroup:
-    Value: !Ref NetSGroup
   outAppSGroup:
     Value: !Ref AppSGroup
   outTaskSGroup:
