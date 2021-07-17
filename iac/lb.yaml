@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: APIGW NLB ALB ECS load balancers
+Parameters:
+  pDomainName:
+    Type: String
+  pZoneId:
+    Type: String
+  pVpcId:
+    Type: String
+  pSubnetIds:
+    Type: List<String>
+  pIngressCidr:
+    Type: String
+  pIngressBastion:
+    Type: String
+  pCertArn:
+    Type: String
+Resources:
+  # Security Groups
+  NetSGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for NLB
+      VpcId: !Ref pVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref pIngressCidr
+  AppSGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ALB
+      VpcId: !Ref pVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref NetSGroup
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref pIngressBastion
+  TaskSGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ALB
+      VpcId: !Ref pVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref AppSGroup
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref pIngressBastion
+  # NLB
+
+  # ALB
+  AppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      Scheme: internal
+      SecurityGroups:
+        - !Ref AppSGroup
+      Subnets: !Ref pSubnetIds
+      Type: application
+  AppListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref pCertArn
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref AppTargets
+          Type: forward
+      LoadBalancerArn: !Ref AppLB
+      Port: 443
+      Protocol: HTTPS
+  AppTargets:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Matcher:
+        HttpCode: 200
+      HealthCheckIntervalSeconds: 15
+      HealthCheckPath: "/customer"
+      HealthCheckProtocol: "HTTP"
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Port: 8080
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref pVpcId
+  # Route53
+  AppAlias:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref pZoneId
+      Name: !Ref pDomainName
+      ResourceRecords:
+        - !GetAtt AppLB.DNSName
+      TTL: 300
+      Type: CNAME
+Outputs:
+  outNetSGroup:
+    Value: !Ref NetSGroup
+  outAppSGroup:
+    Value: !Ref AppSGroup
+  outTaskSGroup:
+    Value: !Ref TaskSGroup
+  outAppLB:
+    Value: !Ref AppLB
+  outAppLBDNSName:
+    Value: !GetAtt AppLB.DNSName
+  outAppTargets:
+    Value: !Ref AppTargets

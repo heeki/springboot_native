@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: APIGW integration ACM certificate
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  pDomainName:
+    Type: String
+  pHostedZoneId:
+    Type: String
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref pDomainName
+      DomainValidationOptions:
+        - DomainName: !Ref pDomainName
+          HostedZoneId: !Ref pHostedZoneId
+Outputs:
+  certificateArn:
+    Value: !Ref Certificate
