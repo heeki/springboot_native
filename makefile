@@ -56,7 +56,6 @@ ecs.deploy:
 
 api: api.package api.deploy
 api.package:
-	aws s3 cp iac/swagger.yaml s3://${P_SWAGGER_BUCKET}/${P_SWAGGER_KEY}
 	sam package -t ${API_TEMPLATE} --output-template-file ${API_OUTPUT} --s3-bucket ${S3BUCKET}
 api.deploy:
 	sam deploy -t ${API_OUTPUT} --stack-name ${API_STACK} --parameter-overrides ${API_PARAMS} --capabilities CAPABILITY_NAMED_IAM

@@ -1,0 +1,29 @@
+openapi: 3.0.1
+info:
+  title: nlb-integration
+  description: APIGW NLB ALB ECS
+  version: 0.1.0
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+paths:
+  /customer:
+    get:
+      summary: customer
+      description: returns list of customers
+      responses:
+        200:
+          description: ok
+      x-amazon-apigateway-integration:
+        connectionId:
+          Fn::Sub: '${Link}'
+        connectionType: VPC_LINK
+        httpMethod: GET
+        responses:
+          200:
+            statusCode: 200
+            responseTemplates:
+              application/json: "#set ($root=$input.path('$')) $root"
+        type: http
+        uri: http://apigw-NetLB-3Z6QU9MJ7ON6-32801a73696d9e2e.elb.us-east-1.amazonaws.com/customer

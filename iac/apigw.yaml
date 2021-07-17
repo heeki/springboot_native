@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: APIGW NLB ALB ECS
+Transform: AWS::Serverless-2016-10-31
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+  Function:
+    Timeout: 60
+    MemorySize: 1024
+Parameters:
+  pApiStage:
+    Type: String
+  pNLBArn:
+    Type: String
+Resources:
+  # Vpclink
+  Link:
+    Type: AWS::ApiGateway::VpcLink
+    Properties:
+      Name: nlb-integration
+      TargetArns:
+        - !Ref pNLBArn
+  # APIGW
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiLogGroup.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength", "auth.status":"$context.authorizer.status", "auth.error":"$context.authorizer.error", "auth.token":"$context.authorizer.token", "auth.reason":"$context.authorizer.reason", "auth.simple":"$context.authorizer.simple", "auth.pversion":"$context.authorizer.pversion" }'
+      StageName: !Ref pApiStage
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: swagger.yaml
+      EndpointConfiguration:
+        Type: REGIONAL
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/nlb-integration-${Api}"
+      RetentionInDays: 7
+Outputs:
+  outLink:
+    Value: !Ref Link
+  outApi:
+    Value: !Ref Api
