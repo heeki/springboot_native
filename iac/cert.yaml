@@ -6,6 +6,8 @@ Parameters:
     Type: String
   pHostedZoneId:
     Type: String
+  pAltNames:
+    Type: List<String>
 Resources:
   Certificate:
     Type: AWS::CertificateManager::Certificate
@@ -14,6 +16,7 @@ Resources:
       DomainValidationOptions:
         - DomainName: !Ref pDomainName
           HostedZoneId: !Ref pHostedZoneId
+      SubjectAlternativeNames: !Ref pAltNames
 Outputs:
   certificateArn:
     Value: !Ref Certificate

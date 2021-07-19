@@ -26,4 +26,8 @@ paths:
             responseTemplates:
               application/json: "#set ($root=$input.path('$')) $root"
         type: http
-        uri: http://apigw-NetLB-3Z6QU9MJ7ON6-32801a73696d9e2e.elb.us-east-1.amazonaws.com/customer
+        # uri: http://apigw-NetLB-3Z6QU9MJ7ON6-32801a73696d9e2e.elb.us-east-1.amazonaws.com/customer
+        # uri: https://apigw-NetLB-3Z6QU9MJ7ON6-32801a73696d9e2e.elb.us-east-1.amazonaws.com/customer
+        # uri: http://link.internal.heeki.cloud/customer
+        # uri: http://link.internal.heeki.cloud:8080/customer
+        uri: https://link.internal.heeki.cloud/customer

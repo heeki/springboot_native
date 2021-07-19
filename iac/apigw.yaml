@@ -12,6 +12,10 @@ Parameters:
     Type: String
   pNLBArn:
     Type: String
+  pVpcAllow:
+    Type: String
+  pVpcEndpointId:
+    Type: String
 Resources:
   # Vpclink
   Link:
@@ -27,14 +31,20 @@ Resources:
       AccessLogSetting:
         DestinationArn: !GetAtt ApiLogGroup.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","routeKey":"$context.routeKey", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength", "auth.status":"$context.authorizer.status", "auth.error":"$context.authorizer.error", "auth.token":"$context.authorizer.token", "auth.reason":"$context.authorizer.reason", "auth.simple":"$context.authorizer.simple", "auth.pversion":"$context.authorizer.pversion" }'
-      StageName: !Ref pApiStage
+      Auth:
+        ResourcePolicy:
+          SourceVpcWhitelist:
+            - !Ref pVpcAllow
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
             Location: swagger.yaml
       EndpointConfiguration:
-        Type: REGIONAL
+        Type: PRIVATE
+        VPCEndpointIds:
+          - !Ref pVpcEndpointId
+      StageName: !Ref pApiStage
   ApiLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:

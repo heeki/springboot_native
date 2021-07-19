@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: APIGW NLB ALB ECS load balancers
 Parameters:
-  pDomainName:
+  pDomainNLB:
+    Type: String
+  pDomainALB:
     Type: String
   pZoneId:
     Type: String
@@ -19,6 +21,8 @@ Parameters:
     Type: List<String>
   pALBIps:
     Type: List<String>
+  pTaskIps:
+    Type: List<String>
 Resources:
   # Security Groups
   AppSGroup:
@@ -30,6 +34,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+          SourceSecurityGroupId: !Ref pIngressBastion
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
           SourceSecurityGroupId: !Ref pIngressBastion
         - IpProtocol: tcp
           FromPort: 80
@@ -47,10 +55,6 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: !Join ["/", [!Select [3, !Ref pNLBIps], "32"]]
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          SourceSecurityGroupId: !Ref pIngressBastion
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
@@ -81,6 +85,22 @@ Resources:
           FromPort: 8080
           ToPort: 8080
           SourceSecurityGroupId: !Ref pIngressBastion
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: !Join ["/", [!Select [0, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: !Join ["/", [!Select [1, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: !Join ["/", [!Select [2, !Ref pNLBIps], "32"]]
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: !Join ["/", [!Select [3, !Ref pNLBIps], "32"]]
   # NLB
   NetLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -99,6 +119,26 @@ Resources:
       LoadBalancerArn: !Ref NetLB
       Port: 80
       Protocol: TCP
+  NetListener443:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref NetTargets443
+          Type: forward
+      LoadBalancerArn: !Ref NetLB
+      Port: 443
+      Protocol: TCP
+  NetListener8080:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref NetTargets8080
+          Type: forward
+      LoadBalancerArn: !Ref NetLB
+      Port: 8080
+      Protocol: TCP
   NetTargets80:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -110,21 +150,9 @@ Resources:
       Targets:
         - Id: !Select [0, !Ref pALBIps]
         - Id: !Select [1, !Ref pALBIps]
-        - Id: !Select [2, !Ref pALBIps]
-        - Id: !Select [3, !Ref pALBIps]
       TargetType: ip
       VpcId: !Ref pVpcId
-  NetListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Order: 1
-          TargetGroupArn: !Ref NetTargets
-          Type: forward
-      LoadBalancerArn: !Ref NetLB
-      Port: 443
-      Protocol: TCP
-  NetTargets:
+  NetTargets443:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckProtocol: "TCP"
@@ -135,8 +163,19 @@ Resources:
       Targets:
         - Id: !Select [0, !Ref pALBIps]
         - Id: !Select [1, !Ref pALBIps]
-        - Id: !Select [2, !Ref pALBIps]
-        - Id: !Select [3, !Ref pALBIps]
+      TargetType: ip
+      VpcId: !Ref pVpcId
+  NetTargets8080:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckProtocol: "TCP"
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Port: 8080
+      Protocol: TCP
+      Targets:
+        - Id: !Select [0, !Ref pTaskIps]
+        - Id: !Select [1, !Ref pTaskIps]
       TargetType: ip
       VpcId: !Ref pVpcId
   # ALB
@@ -187,11 +226,20 @@ Resources:
       TargetType: ip
       VpcId: !Ref pVpcId
   # Route53
+  NetAlias:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref pZoneId
+      Name: !Ref pDomainNLB
+      ResourceRecords:
+        - !GetAtt NetLB.DNSName
+      TTL: 300
+      Type: CNAME
   AppAlias:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref pZoneId
-      Name: !Ref pDomainName
+      Name: !Ref pDomainALB
       ResourceRecords:
         - !GetAtt AppLB.DNSName
       TTL: 300
