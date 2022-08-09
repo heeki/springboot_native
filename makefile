@@ -9,10 +9,6 @@ mvn.compile:
 mvn.package:
 	mvn package
 
-<<<<<<< HEAD
-docker: docker.native.clean docker.native.build docker.native.run
-docker.native.clean:
-=======
 docker: docker.build docker.login docker.tag docker.push
 docker.build:
 	docker build -f dockerfile.native -t ${CIMAGE}:${CVERSION} .
@@ -24,11 +20,11 @@ docker.push:
 	docker push ${ACCOUNTID}.dkr.ecr.${REGION}.amazonaws.com/${CIMAGE}:${CVERSION}
 
 docker.native.build:
-	docker rmi heeki/oci_springboot_native
+	docker rmi heeki/springboot_native
 docker.native.build:
-	docker build -f dockerfile.native -t heeki/oci_springboot_native .
+	docker build -f dockerfile.native -t ${CIMAGE}:${CVERSION} .
 docker.native.run:
-	docker run -p 8081:8080 heeki/oci_springboot_native
+	docker run -p 8081:8080 --env-file etc/environment.docker ${CIMAGE}:${CVERSION}
 
 cert: cert.package cert.deploy
 cert.package:
@@ -59,4 +55,3 @@ api.package:
 	sam package -t ${API_TEMPLATE} --output-template-file ${API_OUTPUT} --s3-bucket ${S3BUCKET}
 api.deploy:
 	sam deploy -t ${API_OUTPUT} --stack-name ${API_STACK} --parameter-overrides ${API_PARAMS} --capabilities CAPABILITY_NAMED_IAM
->>>>>>> 02e9871 (implemented ecs service)
