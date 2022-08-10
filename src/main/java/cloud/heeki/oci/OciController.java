@@ -52,12 +52,14 @@ public class OciController {
 
     @PostMapping("/customer")
     String createCustomer(@RequestBody Customer c) {
+        this.da.put(c);
         customers.add(c);
         return c.toString();
     }
 
     @DeleteMapping("/customer/{id}")
     void deleteCustomer(@PathVariable String id) {
+        this.da.delete(id);
         customers.removeIf(c -> c.uuid.toString().equals(id));
     }
 }
